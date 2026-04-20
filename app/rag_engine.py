@@ -1,15 +1,32 @@
-import os
-import chromadb
+from qdrant_client import QdrantClient
+from qdrant_client.models import Distance, VectorParams, PointStruct
 from sentence_transformers import SentenceTransformer
 from app.config import settings
+import os
 
-_client = chromadb.PersistentClient(path=settings.CHROMA_PATH)
-_collection = _client.get_or_create_collection("finance_tips")
-_model = SentenceTransformer(settings.MODEL_NAME)
+client = QdrantClient(
+    url=settings.QDRANT_URL,
+    api_key=settings.QDRANT_API_KEY,
+)
+
+model = SentenceTransformer(settings.MODEL_NAME)
+COLLECTION_NAME = settings.QDRANT_COLLECTION
+
+
+def ensure_collection():
+    existing = [c.name for c in client.get_collections().collections]
+    if COLLECTION_NAME not in existing:
+        client.create_collection(
+            collection_name=COLLECTION_NAME,
+            vectors_config=VectorParams(size=384, distance=Distance.COSINE),
+        )
 
 
 def load_knowledge_base(file_path: str = "data/tips.txt"):
-    if _collection.count() > 0:
+    ensure_collection()
+
+    count = client.count(collection_name=COLLECTION_NAME).count
+    if count > 0:
         return
 
     if not os.path.exists(file_path):
@@ -18,25 +35,27 @@ def load_knowledge_base(file_path: str = "data/tips.txt"):
     with open(file_path, "r", encoding="utf-8") as f:
         tips = [line.strip() for line in f if line.strip()]
 
-    embeddings = _model.encode(tips).tolist()
-    ids = [f"tip_{i}" for i in range(len(tips))]
+    embeddings = model.encode(tips).tolist()
 
-    _collection.add(
-        ids=ids,
-        documents=tips,
-        embeddings=embeddings,
-    )
+    points = [
+        PointStruct(
+            id=i,
+            vector=embeddings[i],
+            payload={"text": tips[i]}
+        )
+        for i in range(len(tips))
+    ]
+
+    client.upsert(collection_name=COLLECTION_NAME, points=points)
 
 
 def retrieve_relevant_tips(query: str, top_k: int = 4):
-    query_embedding = _model.encode([query]).tolist()[0]
+    query_vector = model.encode(query).tolist()
 
-    results = _collection.query(
-        query_embeddings=[query_embedding],
-        n_results=top_k,
+    results = client.query_points(
+        collection_name=COLLECTION_NAME,
+        query=query_vector,
+        limit=top_k,
     )
 
-    documents = results.get("documents", [[]])
-    if documents and len(documents[0]) > 0:
-        return documents[0]
-    return []
+    return [point.payload["text"] for point in results.points] # type: ignore

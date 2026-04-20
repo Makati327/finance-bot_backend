@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
-from app import models, schemas
+import app.models as models
+import app.schemas as schemas
 
 
 def create_expense(db: Session, expense: schemas.ExpenseCreate):
@@ -7,7 +8,7 @@ def create_expense(db: Session, expense: schemas.ExpenseCreate):
         amount=expense.amount,
         category=expense.category,
         note=expense.note,
-        date=expense.date,
+        date=str(expense.date),
     )
     db.add(db_expense)
     db.commit()

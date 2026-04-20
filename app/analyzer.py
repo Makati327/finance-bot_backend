@@ -17,7 +17,10 @@ def expenses_to_dataframe(expenses):
     ]
 
     df = pd.DataFrame(data)
-    df["date"] = pd.to_datetime(df["date"])
+
+    df["date"] = pd.to_datetime(df["date"], errors="coerce")
+    df = df.dropna(subset=["date"])
+
     return df
 
 
@@ -41,16 +44,22 @@ def get_spending_summary(df: pd.DataFrame):
     category_totals_series = (
         df.groupby("category")["amount"].sum().sort_values(ascending=False)
     )
-    category_totals = {k: float(v) for k, v in category_totals_series.to_dict().items()}
+    category_totals = {
+        k: float(v) for k, v in category_totals_series.to_dict().items()
+    }
 
-    top_category = category_totals_series.index[0] if not category_totals_series.empty else "N/A"
+    top_category = (
+        category_totals_series.index[0] if not category_totals_series.empty else "N/A"
+    )
 
     daily_spending_series = (
         df.groupby(df["date"].dt.strftime("%Y-%m-%d"))["amount"]
         .sum()
         .sort_index()
     )
-    daily_spending = {k: float(v) for k, v in daily_spending_series.to_dict().items()}
+    daily_spending = {
+        k: float(v) for k, v in daily_spending_series.to_dict().items()
+    }
 
     return {
         "total_spent": total_spent,

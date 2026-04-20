@@ -14,7 +14,7 @@ from app.llm_engine import ask_financial_assistant, purchase_advisor
 from app.utils import health_message
 
 Base.metadata.create_all(bind=engine)
-#load_knowledge_base()
+load_knowledge_base()
 
 app = FastAPI(title="AI Financial Lifestyle Assistant API")
 
@@ -30,6 +30,10 @@ app.add_middleware(
 @app.get("/")
 def root():
     return health_message()
+
+@app.get("/")
+def root():
+    return {"status": "ok", "message": "Finance assistant backend is running"}
 
 
 @app.post("/expenses", response_model=schemas.ExpenseResponse)

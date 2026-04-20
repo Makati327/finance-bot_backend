@@ -1,12 +1,13 @@
 from pydantic import BaseModel
 from typing import Optional, Dict, List
+from datetime import date
 
 
 class ExpenseCreate(BaseModel):
     amount: float
     category: str
     note: Optional[str] = None
-    date: str
+    date: date
 
 
 class ExpenseResponse(BaseModel):

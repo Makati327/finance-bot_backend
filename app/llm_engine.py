@@ -9,7 +9,7 @@ client = genai.Client(api_key=settings.GEMINI_API_KEY)
 def build_context(df, user_query: str):
     summary = get_spending_summary(df)
     insights = generate_rule_based_insights(df)
-    tips = retrieve_relevant_tips(user_query, top_k=4)
+    tips = []
 
     context = f"""
 User spending summary:

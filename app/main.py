@@ -14,7 +14,7 @@ from app.llm_engine import ask_financial_assistant, purchase_advisor
 from app.utils import health_message
 
 Base.metadata.create_all(bind=engine)
-load_knowledge_base()
+#load_knowledge_base()
 
 app = FastAPI(title="AI Financial Lifestyle Assistant API")
 
